@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class JointsDataset(Dataset):
-    def __init__(self, cfg, root, image_set, is_train, transform=None):
+    def __init__(self, cfg, root, image_set, is_train, transform=None, use_branch=False):
         self.num_joints = 0
         self.pixel_std = 200
         self.flip_pairs = []
@@ -55,6 +55,7 @@ class JointsDataset(Dataset):
 
         self.transform = transform
         self.db = []
+        self.use_branch = use_branch
 
     def _get_db(self):
         raise NotImplementedError
@@ -120,12 +121,10 @@ class JointsDataset(Dataset):
         if self.data_format == 'zip':
             from utils import zipreader
             data_numpy = zipreader.imread(
-                image_file, cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION
-            )
+                image_file, cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
         else:
             data_numpy = cv2.imread(
-                image_file, cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION
-            )
+                image_file, cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
 
         if self.color_rgb:
             data_numpy = cv2.cvtColor(data_numpy, cv2.COLOR_BGR2RGB)
@@ -136,7 +135,8 @@ class JointsDataset(Dataset):
 
         joints = db_rec['joints_3d']
         joints_vis = db_rec['joints_3d_vis']
-
+        if self.use_branch:
+            joints_vis_full = db_rec['joints_3d_vis_full']
         c = db_rec['center']
         s = db_rec['scale']
         score = db_rec['score'] if 'score' in db_rec else 1
@@ -161,7 +161,8 @@ class JointsDataset(Dataset):
             if self.flip and random.random() <= 0.5:
                 data_numpy = data_numpy[:, ::-1, :]
                 joints, joints_vis = fliplr_joints(
-                    joints, joints_vis, data_numpy.shape[1], self.flip_pairs)
+                    joints, joints_vis, data_numpy.shape[1], self.flip_pairs,
+                    joints_vis_full if self.use_branch else None)
                 c[0] = data_numpy.shape[1] - c[0] - 1
 
         trans = get_affine_transform(c, s, r, self.image_size)
@@ -178,7 +179,7 @@ class JointsDataset(Dataset):
             if joints_vis[i, 0] > 0.0:
                 joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
 
-        target, target_weight = self.generate_target(joints, joints_vis)
+        target, target_weight = self.generate_target(joints, joints_vis_full if self.use_branch else joints_vis)
 
         target = torch.from_numpy(target)
         target_weight = torch.from_numpy(target_weight)
@@ -243,7 +244,7 @@ class JointsDataset(Dataset):
             'Only support gaussian map now!'
 
         if self.target_type == 'gaussian':
-            target = np.zeros((self.num_joints,
+            target = np.zeros((self.num_joints * (2 if self.use_branch else 1),
                                self.heatmap_size[1],
                                self.heatmap_size[0]),
                               dtype=np.float32)
@@ -279,10 +280,15 @@ class JointsDataset(Dataset):
                 img_y = max(0, ul[1]), min(br[1], self.heatmap_size[1])
 
                 v = target_weight[joint_id]
-                if v > 0.5:
+                if v == 2 or (not self.use_branch and v > 0.5):
                     target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                         g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
-
+                    if self.use_branch and self.vis_and_all:
+                        target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                            g[g_y[0]:g_y[1], g_x[0]:g_x[1]]                        
+                elif v == 1:
+                    target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                        g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
         if self.use_different_joints_weight:
             target_weight = np.multiply(target_weight, self.joints_weight)
 
