@@ -44,6 +44,8 @@ _C.MODEL.IMAGE_SIZE = [256, 256]  # width * height, ex: 192 * 256
 _C.MODEL.HEATMAP_SIZE = [64, 64]  # width * height, ex: 24 * 32
 _C.MODEL.SIGMA = 2
 _C.MODEL.EXTRA = CN(new_allowed=True)
+_C.MODEL.USE_BRANCH = False
+_C.MODEL.BRANCH_MERGE_STRATEGY = 'max'
 
 _C.LOSS = CN()
 _C.LOSS.USE_OHKM = False

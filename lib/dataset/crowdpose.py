@@ -41,8 +41,8 @@ class CrowdPoseDataset(JointsDataset):
     },
 	'skeleton': [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12], [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11]]
     '''
-    def __init__(self, cfg, root, image_set, is_train, transform=None, use_branch=False):
-        super().__init__(cfg, root, image_set, is_train, transform, use_branch)
+    def __init__(self, cfg, root, image_set, is_train, transform=None):
+        super().__init__(cfg, root, image_set, is_train, transform)
         self.nms_thre = cfg.TEST.NMS_THRE
         self.image_thre = cfg.TEST.IMAGE_THRE
         self.soft_nms = cfg.TEST.SOFT_NMS
@@ -52,6 +52,7 @@ class CrowdPoseDataset(JointsDataset):
         self.use_gt_bbox = cfg.TEST.USE_GT_BBOX
         self.image_width = cfg.MODEL.IMAGE_SIZE[0]
         self.image_height = cfg.MODEL.IMAGE_SIZE[1]
+        self.use_branch = cfg.MODEL.USE_BRANCH
         self.aspect_ratio = self.image_width * 1.0 / self.image_height
         self.pixel_std = 200
         self.coco = COCO(self._get_ann_file_keypoint(cfg))
@@ -89,7 +90,6 @@ class CrowdPoseDataset(JointsDataset):
         ).reshape((self.num_joints, 1))
 
         self.db = self._get_db()
-        self.use_branch = use_branch
 
         if is_train and cfg.DATASET.SELECT_DATA:
             self.db = self.select_data(self.db)

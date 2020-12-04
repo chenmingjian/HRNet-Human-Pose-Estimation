@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class JointsDataset(Dataset):
-    def __init__(self, cfg, root, image_set, is_train, transform=None, use_branch=False):
+    def __init__(self, cfg, root, image_set, is_train, transform=None):
         self.num_joints = 0
         self.pixel_std = 200
         self.flip_pairs = []
@@ -50,12 +50,13 @@ class JointsDataset(Dataset):
         self.image_size = np.array(cfg.MODEL.IMAGE_SIZE)
         self.heatmap_size = np.array(cfg.MODEL.HEATMAP_SIZE)
         self.sigma = cfg.MODEL.SIGMA
+        self.use_branch = cfg.MODEL.USE_BRANCH
+        self.vis_and_all = False
         self.use_different_joints_weight = cfg.LOSS.USE_DIFFERENT_JOINTS_WEIGHT
         self.joints_weight = 1
 
         self.transform = transform
         self.db = []
-        self.use_branch = use_branch
 
     def _get_db(self):
         raise NotImplementedError
