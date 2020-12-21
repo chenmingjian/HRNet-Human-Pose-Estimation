@@ -35,7 +35,11 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
     model.train()
 
     end = time.time()
-    for i, (input, target, target_weight, meta) in enumerate(train_loader):
+    for i, item in enumerate(train_loader):
+        if config.MODEL.USE_MASK:
+            input, target, target_weight, meta, mask = item
+        else:
+            input, target, target_weight, meta = item
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -45,13 +49,18 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
         target = target.cuda(non_blocking=True)
         target_weight = target_weight.cuda(non_blocking=True)
 
-        if isinstance(outputs, list):
-            loss = criterion(outputs[0], target, target_weight)
-            for output in outputs[1:]:
-                loss += criterion(output, target, target_weight)
-        else:
-            output = outputs
+        if config.MODEL.USE_MASK:
+            mask = mask.cuda(non_blocking=True)
+            output = torch.mul(outputs, mask)
             loss = criterion(output, target, target_weight)
+        else:
+            if isinstance(outputs, list):
+                loss = criterion(outputs[0], target, target_weight)
+                for output in outputs[1:]:
+                    loss += criterion(output, target, target_weight)
+            else:
+                output = outputs
+                loss = criterion(output, target, target_weight)
 
         # loss = criterion(output, target, target_weight)
 
@@ -115,7 +124,11 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
     idx = 0
     with torch.no_grad():
         end = time.time()
-        for i, (input, target, target_weight, meta) in enumerate(val_loader):
+        for i, item in enumerate(val_loader):
+            if config.MODEL.USE_MASK:
+                input, target, target_weight, meta, mask = item
+            else:
+                input, target, target_weight, meta = item
             # compute output
             outputs = model(input)
             if isinstance(outputs, list):
@@ -180,7 +193,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                             output_np_tmp[i_output, j] = v if np.max(v) > np.max(uv) else uv
                     output_np = output_np_tmp
                 elif config.MODEL.BRANCH_MERGE_STRATEGY == "all":
-                    output_np = output_np[:, config.MODEL.NUM_JOINTS:]
+                    output_np = output_np[:, :config.MODEL.NUM_JOINTS]
                 elif config.MODEL.BRANCH_MERGE_STRATEGY == "mix_vis_all":
                     half_shpae = tuple(i//2 if i == config.MODEL.NUM_JOINTS*2 else i for i in output_np.shape)
                     output_np_tmp = np.zeros(half_shpae)
@@ -191,7 +204,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                             output_np_tmp[i_output, j] = v if np.max(v) > 0.2 else uv 
                     output_np = output_np_tmp
                 elif config.MODEL.BRANCH_MERGE_STRATEGY == "vis":
-                    output_np = output_np[:, :config.MODEL.NUM_JOINTS]
+                    output_np = output_np[:, config.MODEL.NUM_JOINTS:]
                 elif config.MODEL.BRANCH_MERGE_STRATEGY == "vis_in_all":
                     half_shpae = tuple(i//2 if i == config.MODEL.NUM_JOINTS*2 else i for i in output_np.shape)
                     output_np_tmp = np.zeros(half_shpae)
@@ -203,7 +216,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                                 output_np_tmp[i_output, j] = a_heatmap
                     output_np = output_np_tmp
             preds, maxvals = get_final_preds(
-                config, output.clone().cpu().numpy(), c, s)
+                config, output_np, c, s)
 
             all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2]
             all_preds[idx:idx + num_images, :, 2:3] = maxvals

@@ -46,6 +46,8 @@ _C.MODEL.SIGMA = 2
 _C.MODEL.EXTRA = CN(new_allowed=True)
 _C.MODEL.USE_BRANCH = False
 _C.MODEL.BRANCH_MERGE_STRATEGY = 'max'
+_C.MODEL.VIS_AND_ALL = False
+_C.MODEL.USE_MASK = False
 
 _C.LOSS = CN()
 _C.LOSS.USE_OHKM = False

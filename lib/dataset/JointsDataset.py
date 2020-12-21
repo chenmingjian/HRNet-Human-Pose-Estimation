@@ -51,7 +51,8 @@ class JointsDataset(Dataset):
         self.heatmap_size = np.array(cfg.MODEL.HEATMAP_SIZE)
         self.sigma = cfg.MODEL.SIGMA
         self.use_branch = cfg.MODEL.USE_BRANCH
-        self.vis_and_all = False
+        self.vis_and_all = cfg.MODEL.VIS_AND_ALL
+        self.use_mask = cfg.MODEL.USE_MASK
         self.use_different_joints_weight = cfg.LOSS.USE_DIFFERENT_JOINTS_WEIGHT
         self.joints_weight = 1
 
@@ -179,11 +180,15 @@ class JointsDataset(Dataset):
         for i in range(self.num_joints):
             if joints_vis[i, 0] > 0.0:
                 joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
-
-        target, target_weight = self.generate_target(joints, joints_vis_full if self.use_branch else joints_vis)
+        if self.use_mask:
+            target, target_weight, mask = self.generate_target(joints, joints_vis_full if self.use_branch else joints_vis)
+        else:
+            target, target_weight = self.generate_target(joints, joints_vis_full if self.use_branch else joints_vis)
 
         target = torch.from_numpy(target)
         target_weight = torch.from_numpy(target_weight)
+        if self.use_mask: 
+            mask = torch.from_numpy(mask)
 
         meta = {
             'image': image_file,
@@ -196,6 +201,8 @@ class JointsDataset(Dataset):
             'rotation': r,
             'score': score
         }
+        if self.use_mask: 
+            return input, target, target_weight, meta, mask
 
         return input, target, target_weight, meta
 
@@ -249,9 +256,18 @@ class JointsDataset(Dataset):
                                self.heatmap_size[1],
                                self.heatmap_size[0]),
                               dtype=np.float32)
-
+            if self.use_mask:
+                mask = np.ones((self.num_joints * (2 if self.use_branch else 1),
+                                self.heatmap_size[1],
+                                self.heatmap_size[0]),
+                                dtype=np.float32)
+                heatmap_ones = np.ones((self.heatmap_size[1],
+                                        self.heatmap_size[0]), 
+                                        dtype=np.float32)
+                heatmap_zeros = np.zeros((self.heatmap_size[1],
+                                        self.heatmap_size[0]), 
+                                        dtype=np.float32)
             tmp_size = self.sigma * 3
-
             for joint_id in range(self.num_joints):
                 feat_stride = self.image_size / self.heatmap_size
                 mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
@@ -281,16 +297,26 @@ class JointsDataset(Dataset):
                 img_y = max(0, ul[1]), min(br[1], self.heatmap_size[1])
 
                 v = target_weight[joint_id]
-                if v == 2 or (not self.use_branch and v > 0.5):
+                if v > 0.5:
                     target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                         g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
                     if self.use_branch and self.vis_and_all:
-                        target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                            g[g_y[0]:g_y[1], g_x[0]:g_x[1]]                        
-                elif v == 1:
-                    target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                        g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+                        if v == 1:
+                            if self.use_mask:
+                                mask[self.num_joints + joint_id] = np.zeros((self.heatmap_size[1],
+                                                                            self.heatmap_size[0]), 
+                                                                            dtype=np.float32)
+                        elif v == 2:
+                            target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                                g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+                            if self.use_mask:
+                                mask[self.num_joints + joint_id] = np.where(target[self.num_joints + joint_id] > 0, 
+                                    heatmap_ones, heatmap_zeros)
+                if target_weight[joint_id] > 1:
+                    target_weight[joint_id] = 1
         if self.use_different_joints_weight:
             target_weight = np.multiply(target_weight, self.joints_weight)
 
+        if self.use_mask:
+            return target, target_weight, mask
         return target, target_weight
