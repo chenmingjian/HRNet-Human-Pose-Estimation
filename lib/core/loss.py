@@ -18,18 +18,18 @@ class JointsMSELoss(nn.Module):
         self.criterion = nn.MSELoss(reduction='mean')
         self.use_target_weight = use_target_weight
 
-    def forward(self, output, target, target_weight):
+    def forward(self, output, target, target_weight, two_branch_weight=1):
         batch_size = output.size(0)
         num_joints = output.size(1)
         heatmaps_pred = output.reshape((batch_size, num_joints, -1)).split(1, 1)
         heatmaps_gt = target.reshape((batch_size, num_joints, -1)).split(1, 1)
         loss = 0
         num_joints_real = target_weight.size(1)
-        if num_joints != num_joints_real:
-            assert num_joints == num_joints_real * 2, "some thing unexpect happen."
+        # if num_joints != num_joints_real:
+        #     assert num_joints == num_joints_real * 2, "some thing unexpect happen."
 
         for idx in range(num_joints):
-            weight = 2 if idx < num_joints_real else 1
+            weight = two_branch_weight if idx < num_joints_real else 1
             heatmap_pred = heatmaps_pred[idx].squeeze()
             heatmap_gt = heatmaps_gt[idx].squeeze()
             if self.use_target_weight:

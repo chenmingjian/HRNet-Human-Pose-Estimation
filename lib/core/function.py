@@ -52,15 +52,15 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
         if config.MODEL.USE_MASK:
             mask = mask.cuda(non_blocking=True)
             output = torch.mul(outputs, mask)
-            loss = criterion(output, target, target_weight)
+            loss = criterion(output, target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
         else:
             if isinstance(outputs, list):
-                loss = criterion(outputs[0], target, target_weight)
+                loss = criterion(outputs[0], target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
                 for output in outputs[1:]:
-                    loss += criterion(output, target, target_weight)
+                    loss += criterion(output, target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
             else:
                 output = outputs
-                loss = criterion(output, target, target_weight)
+                loss = criterion(output, target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
 
         # loss = criterion(output, target, target_weight)
 
@@ -163,7 +163,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             target = target.cuda(non_blocking=True)
             target_weight = target_weight.cuda(non_blocking=True)
 
-            loss = criterion(output, target, target_weight)
+            loss = criterion(output, target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
 
             num_images = input.size(0)
             # measure accuracy and record loss

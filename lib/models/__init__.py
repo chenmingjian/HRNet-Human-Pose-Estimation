@@ -23,3 +23,6 @@ import models.pose_hrnet_branch_3
 import models.pose_hrnet_branch_3_1
 import models.pose_hrnet_branch_midFeature
 import models.pose_hrnet_branch_midFeature_mul
+import models.pose_hrnet_branch_midFeature_halfHeatmap
+import models.pose_hrnet_branch_feature_halfHeatmap
+import models.pose_hrnet_branch_midFeature_easyBackward

@@ -53,6 +53,7 @@ class JointsDataset(Dataset):
         self.use_branch = cfg.MODEL.USE_BRANCH
         self.vis_and_all = cfg.MODEL.VIS_AND_ALL
         self.use_mask = cfg.MODEL.USE_MASK
+        self.use_half_heatmap = cfg.MODEL.USE_HALF_HEATMAP
         self.use_different_joints_weight = cfg.LOSS.USE_DIFFERENT_JOINTS_WEIGHT
         self.joints_weight = 1
 
@@ -252,7 +253,12 @@ class JointsDataset(Dataset):
             'Only support gaussian map now!'
 
         if self.target_type == 'gaussian':
-            target = np.zeros((self.num_joints * (2 if self.use_branch else 1),
+            _num_joints = self.num_joints
+            if self.use_branch:
+                _num_joints = 2 * self.num_joints
+                if self.use_half_heatmap:
+                    _num_joints = self.num_joints + (self.num_joints-2) // 2 + 2
+            target = np.zeros((_num_joints,
                                self.heatmap_size[1],
                                self.heatmap_size[0]),
                               dtype=np.float32)
@@ -307,8 +313,16 @@ class JointsDataset(Dataset):
                                                                             self.heatmap_size[0]), 
                                                                             dtype=np.float32)
                         elif v == 2:
-                            target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                                g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+                            if self.use_half_heatmap:
+                                if joint_id in {12, 13}:
+                                    target_index = self.num_joints + (joint_id + 1) // 2
+                                else:
+                                    target_index = self.num_joints + joint_id // 2
+                                target[target_index][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                                    g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+                            else:
+                                target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                                    g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
                             if self.use_mask:
                                 mask[self.num_joints + joint_id] = np.where(target[self.num_joints + joint_id] > 0, 
                                     heatmap_ones, heatmap_zeros)
