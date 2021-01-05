@@ -28,6 +28,7 @@ MODEL:
   VIS_AND_ALL: true
   USE_MASK: true
   BRANCH_MERGE_STRATEGY: "all"
+  TWO_BRANCH_WEIGHT: 2
   NAME: pose_hrnet_branch_2
   NUM_JOINTS: 14
   PRETRAINED: 'models/pytorch/imagenet/hrnet_w32-36af842e.pth'

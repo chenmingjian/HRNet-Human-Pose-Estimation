@@ -278,7 +278,7 @@ class CrowdPoseDataset(JointsDataset):
     def evaluate(self, cfg, preds, output_dir, all_boxes, img_path,
                  *args, **kwargs):
         rank = cfg.RANK
-
+        add_is_vis_label = 'is_vis' in kwargs and kwargs['is_vis'] is not None
         res_folder = os.path.join(output_dir, 'results')
         if not os.path.exists(res_folder):
             try:
@@ -300,6 +300,8 @@ class CrowdPoseDataset(JointsDataset):
                 'score': all_boxes[idx][5],
                 'image': int(img_path[idx].split('/')[-1][:-4])
             })
+            if add_is_vis_label:
+                _kpts[-1]['vis'] = kwargs['is_vis'][idx]
         # image x person x (keypoints)
         kpts = defaultdict(list)
         for kpt in _kpts:
@@ -400,18 +402,31 @@ class CrowdPoseDataset(JointsDataset):
                 key_points[:, ipt * 3 + 0] = _key_points[:, ipt, 0]
                 key_points[:, ipt * 3 + 1] = _key_points[:, ipt, 1]
                 key_points[:, ipt * 3 + 2] = _key_points[:, ipt, 2]  # keypoints score.
-
-            result = [
-                {
-                    'image_id': img_kpts[k]['image'],
-                    'category_id': cat_id,
-                    'keypoints': list(key_points[k]),
-                    'score': img_kpts[k]['score'],
-                    'center': list(img_kpts[k]['center']),
-                    'scale': list(img_kpts[k]['scale'])
-                }
-                for k in range(len(img_kpts))
-            ]
+            if 'vis' in img_kpts[0].keys():
+                result = [
+                    {
+                        'image_id': img_kpts[k]['image'],
+                        'category_id': cat_id,
+                        'keypoints': list(key_points[k]),
+                        'score': img_kpts[k]['score'],
+                        'center': list(img_kpts[k]['center']),
+                        'scale': list(img_kpts[k]['scale']),
+                        'vis': list(img_kpts[k]['vis'].reshape((-1,)))
+                    }
+                    for k in range(len(img_kpts))
+                ]
+            else:
+                result = [
+                    {
+                        'image_id': img_kpts[k]['image'],
+                        'category_id': cat_id,
+                        'keypoints': list(key_points[k]),
+                        'score': img_kpts[k]['score'],
+                        'center': list(img_kpts[k]['center']),
+                        'scale': list(img_kpts[k]['scale']),
+                    }
+                    for k in range(len(img_kpts))
+                ]
             cat_results.extend(result)
 
         return cat_results

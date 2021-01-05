@@ -26,3 +26,7 @@ import models.pose_hrnet_branch_midFeature_mul
 import models.pose_hrnet_branch_midFeature_halfHeatmap
 import models.pose_hrnet_branch_feature_halfHeatmap
 import models.pose_hrnet_branch_midFeature_easyBackward
+import models.pose_hrnet_branch_midFeature_easyMidSupervise
+
+import models.pose_hrnet_branch_midFeature_easyMidSupervise_mergeHeatmap
+import models.pose_hrnet_branch_disk

@@ -13,7 +13,7 @@ import math
 import numpy as np
 
 from utils.transforms import transform_preds
-
+from scipy.special import softmax
 
 def get_max_preds(batch_heatmaps):
     '''
@@ -45,10 +45,31 @@ def get_max_preds(batch_heatmaps):
     preds *= pred_mask
     return preds, maxvals
 
+def get_vis(config, batch_heatmaps, coords):
+    batch_size = batch_heatmaps.shape[0]
+    num_joints = batch_heatmaps.shape[1]
+    width = batch_heatmaps.shape[3]
 
-def get_final_preds(config, batch_heatmaps, center, scale):
-    coords, maxvals = get_max_preds(batch_heatmaps)
+    vis = np.zeros((batch_size, config.MODEL.NUM_JOINTS, 1))
+    heatmaps_reshaped = batch_heatmaps
+    idxs = coords
+    for i in range(config.MODEL.NUM_JOINTS):
+        index_joints = i
+        if config.MODEL.USE_HALF_HEATMAP:
+            index_joints = i // 2
+            if i in {12, 13}:
+                index_joints = (i+1) // 2
+        for j in range(batch_size):
+            heatmaps_tmp = heatmaps_reshaped[j, index_joints]
+            vis[j, i] = heatmaps_tmp[idxs[j, i, 1].astype(int), idxs[j, i, 0].astype(int)]
+            vis[j, i] = 2 if vis[j, i] >= 0.5 else 1
+    return vis
+        
 
+def get_final_preds(config, batch_heatmaps, center, scale, batch_heatmaps_vis=None):
+    coords, maxvals = get_max_preds(batch_heatmaps)  # coords.shape=(112, 14, 2)
+    if batch_heatmaps_vis is not None:
+        is_vis = get_vis(config, batch_heatmaps_vis, coords)
     heatmap_height = batch_heatmaps.shape[2]
     heatmap_width = batch_heatmaps.shape[3]
 
@@ -75,5 +96,7 @@ def get_final_preds(config, batch_heatmaps, center, scale):
         preds[i] = transform_preds(
             coords[i], center[i], scale[i], [heatmap_width, heatmap_height]
         )
-
+    if batch_heatmaps_vis is not None:
+        return preds, maxvals, is_vis
+    
     return preds, maxvals

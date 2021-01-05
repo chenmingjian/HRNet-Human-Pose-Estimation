@@ -121,6 +121,11 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
     image_path = []
     filenames = []
     imgnums = []
+
+    isViss = None
+    if config.MODEL.BRANCH_MERGE_STRATEGY in {"all", }:
+        isViss = np.zeros((num_samples, config.MODEL.NUM_JOINTS, 1))
+
     idx = 0
     with torch.no_grad():
         end = time.time()
@@ -182,6 +187,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             score = meta['score'].numpy()
 
             output_np = output.clone().cpu().numpy()
+            output_vis_np = None
             if config.MODEL.USE_BRANCH:
                 if config.MODEL.BRANCH_MERGE_STRATEGY == "max":
                     half_shpae = tuple(i//2 if i == config.MODEL.NUM_JOINTS*2 else i for i in output_np.shape)
@@ -193,7 +199,8 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                             output_np_tmp[i_output, j] = v if np.max(v) > np.max(uv) else uv
                     output_np = output_np_tmp
                 elif config.MODEL.BRANCH_MERGE_STRATEGY == "all":
-                    output_np = output_np[:, :config.MODEL.NUM_JOINTS]
+                    output_np, output_vis_np = output_np[:, :config.MODEL.NUM_JOINTS], output_np[:, config.MODEL.NUM_JOINTS:]
+                    # output_vis_np = None
                 elif config.MODEL.BRANCH_MERGE_STRATEGY == "mix_vis_all":
                     half_shpae = tuple(i//2 if i == config.MODEL.NUM_JOINTS*2 else i for i in output_np.shape)
                     output_np_tmp = np.zeros(half_shpae)
@@ -215,11 +222,18 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                             if np.max(v_heatmap) > 0.2:
                                 output_np_tmp[i_output, j] = a_heatmap
                     output_np = output_np_tmp
-            preds, maxvals = get_final_preds(
-                config, output_np, c, s)
+            if output_vis_np is not None:
+                preds, maxvals, is_vis = get_final_preds(
+                    config, output_np, c, s, output_vis_np)
+
+            else:
+                preds, maxvals = get_final_preds(
+                    config, output_np, c, s, output_vis_np)
 
             all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2]
             all_preds[idx:idx + num_images, :, 2:3] = maxvals
+            if output_vis_np is not None:
+                isViss[idx:idx + num_images, :] = is_vis
             # double check this all_boxes parts
             all_boxes[idx:idx + num_images, 0:2] = c[:, 0:2]
             all_boxes[idx:idx + num_images, 2:4] = s[:, 0:2]
@@ -246,7 +260,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
 
         name_values, perf_indicator = val_dataset.evaluate(
             config, all_preds, output_dir, all_boxes, image_path,
-            filenames, imgnums
+            filenames, imgnums, is_vis=isViss
         )
 
         model_name = config.MODEL.NAME

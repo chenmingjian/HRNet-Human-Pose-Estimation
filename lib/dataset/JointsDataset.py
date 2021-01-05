@@ -54,6 +54,7 @@ class JointsDataset(Dataset):
         self.vis_and_all = cfg.MODEL.VIS_AND_ALL
         self.use_mask = cfg.MODEL.USE_MASK
         self.use_half_heatmap = cfg.MODEL.USE_HALF_HEATMAP
+        self.use_disk = cfg.MODEL.USE_DISK
         self.use_different_joints_weight = cfg.LOSS.USE_DIFFERENT_JOINTS_WEIGHT
         self.joints_weight = 1
 
@@ -262,7 +263,9 @@ class JointsDataset(Dataset):
                                self.heatmap_size[1],
                                self.heatmap_size[0]),
                               dtype=np.float32)
-            if self.use_mask:
+            tmp_size = self.sigma * 3
+            size = 2 * tmp_size + 1
+            if self.use_mask :
                 mask = np.ones((self.num_joints * (2 if self.use_branch else 1),
                                 self.heatmap_size[1],
                                 self.heatmap_size[0]),
@@ -273,7 +276,6 @@ class JointsDataset(Dataset):
                 heatmap_zeros = np.zeros((self.heatmap_size[1],
                                         self.heatmap_size[0]), 
                                         dtype=np.float32)
-            tmp_size = self.sigma * 3
             for joint_id in range(self.num_joints):
                 feat_stride = self.image_size / self.heatmap_size
                 mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
@@ -288,7 +290,6 @@ class JointsDataset(Dataset):
                     continue
 
                 # # Generate gaussian
-                size = 2 * tmp_size + 1
                 x = np.arange(0, size, 1, np.float32)
                 y = x[:, np.newaxis]
                 x0 = y0 = size // 2
@@ -320,6 +321,12 @@ class JointsDataset(Dataset):
                                     target_index = self.num_joints + joint_id // 2
                                 target[target_index][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                                     g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+                            elif self.use_disk:
+                                patch = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+                                patch_shape = patch.shape
+                                target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                                    np.where(patch > 5e-3, np.ones(patch_shape, dtype=np.float32), 
+                                                           np.zeros(patch_shape, dtype=np.float32))
                             else:
                                 target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                                     g[g_y[0]:g_y[1], g_x[0]:g_x[1]]

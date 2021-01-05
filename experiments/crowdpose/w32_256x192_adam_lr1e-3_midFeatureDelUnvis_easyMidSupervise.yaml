@@ -26,7 +26,7 @@ MODEL:
   INIT_WEIGHTS: true
   USE_BRANCH: true
   VIS_AND_ALL: true
-  NAME: pose_hrnet_branch_midFeature_easyBackward
+  NAME: pose_hrnet_branch_midFeature_easyMidSupervise
   NUM_JOINTS: 14
   PRETRAINED: 'models/pytorch/imagenet/hrnet_w32-36af842e.pth'
   TARGET_TYPE: gaussian
