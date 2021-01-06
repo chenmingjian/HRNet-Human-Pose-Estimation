@@ -30,3 +30,6 @@ import models.pose_hrnet_branch_midFeature_easyMidSupervise
 
 import models.pose_hrnet_branch_midFeature_easyMidSupervise_mergeHeatmap
 import models.pose_hrnet_branch_disk
+import models.pose_hrnet_branch_disk_cat
+import models.pose_hrnet_branch_disk_cat_mid
+import models.pose_hrnet_branch_disk_cat_mid_mul

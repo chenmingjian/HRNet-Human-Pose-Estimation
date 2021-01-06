@@ -55,6 +55,7 @@ class JointsDataset(Dataset):
         self.use_mask = cfg.MODEL.USE_MASK
         self.use_half_heatmap = cfg.MODEL.USE_HALF_HEATMAP
         self.use_disk = cfg.MODEL.USE_DISK
+        self.use_mul = cfg.MODEL.USE_MUL
         self.use_different_joints_weight = cfg.LOSS.USE_DIFFERENT_JOINTS_WEIGHT
         self.joints_weight = 1
 
@@ -259,6 +260,8 @@ class JointsDataset(Dataset):
                 _num_joints = 2 * self.num_joints
                 if self.use_half_heatmap:
                     _num_joints = self.num_joints + (self.num_joints-2) // 2 + 2
+                if self.use_mul:
+                    _num_joints = 3 * self.num_joints
             target = np.zeros((_num_joints,
                                self.heatmap_size[1],
                                self.heatmap_size[0]),
@@ -327,6 +330,9 @@ class JointsDataset(Dataset):
                                 target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                                     np.where(patch > 5e-3, np.ones(patch_shape, dtype=np.float32), 
                                                            np.zeros(patch_shape, dtype=np.float32))
+                                if self.use_mul:
+                                    target[self.num_joints*2 + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                                        g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
                             else:
                                 target[self.num_joints + joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                                     g[g_y[0]:g_y[1], g_x[0]:g_x[1]]

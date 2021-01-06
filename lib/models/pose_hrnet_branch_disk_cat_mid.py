@@ -328,7 +328,7 @@ class PoseHighResolutionNet(nn.Module):
             padding=1 if extra.FINAL_CONV_KERNEL == 3 else 0
         )
         self.final_layer_1 = nn.Conv2d(
-            in_channels=pre_stage_channels[0],
+            in_channels=pre_stage_channels[0] + cfg.MODEL.NUM_JOINTS,
             out_channels=cfg.MODEL.NUM_JOINTS,
             kernel_size=extra.FINAL_CONV_KERNEL,
             stride=1,
@@ -445,15 +445,20 @@ class PoseHighResolutionNet(nn.Module):
             else:
                 x_list.append(x)
         y_list = self.stage2(x_list)
-        
+
         x_list = []
         for i in range(self.stage3_cfg['NUM_BRANCHES']):
             if self.transition2[i] is not None:
                 x_list.append(self.transition2[i](y_list[-1]))
             else:
                 x_list.append(y_list[i])
-        y_list = self.stage3(x_list)
 
+        y_list = x_list
+        for i in range(len(self.stage3)):
+            y_list = self.stage3[i](y_list)
+            if i == 2:
+                early_feature = y_list[0]
+                
         x_list = []
         for i in range(self.stage4_cfg['NUM_BRANCHES']):
             if self.transition3[i] is not None:
@@ -463,7 +468,8 @@ class PoseHighResolutionNet(nn.Module):
         y_list = self.stage4(x_list)
 
         x_0 = self.final_layer_0(y_list[0])
-        x_1 = self.final_layer_1(y_list[0])
+        merge_feature_heatmap = torch.cat([x_0.detach(), early_feature], 1)
+        x_1 = self.final_layer_1(merge_feature_heatmap)
         x = torch.cat([x_0, x_1], 1)
         return x
 
