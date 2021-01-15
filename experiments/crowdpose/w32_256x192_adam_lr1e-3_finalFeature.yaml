@@ -26,7 +26,8 @@ MODEL:
   INIT_WEIGHTS: true
   USE_BRANCH: true
   VIS_AND_ALL: true
-  NAME: pose_hrnet_branch_midFeature_easyBackward
+  BRANCH_MERGE_STRATEGY: "all"
+  NAME: pose_hrnet_branch_finalFeature_cat
   NUM_JOINTS: 14
   PRETRAINED: 'models/pytorch/imagenet/hrnet_w32-36af842e.pth'
   TARGET_TYPE: gaussian
@@ -93,7 +94,7 @@ MODEL:
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
-  BATCH_SIZE_PER_GPU: 56
+  BATCH_SIZE_PER_GPU: 60
   SHUFFLE: true
   BEGIN_EPOCH: 0
   END_EPOCH: 210
@@ -109,8 +110,8 @@ TRAIN:
   MOMENTUM: 0.9
   NESTEROV: false
 TEST:
-  BATCH_SIZE_PER_GPU: 56
-  COCO_BBOX_FILE: 'HRNet-Human-Pose-Estimation/data/crowdpose/annotations/crowdpose_test.json'
+  BATCH_SIZE_PER_GPU: 60
+  COCO_BBOX_FILE: '/home/chen/workshop/thesis/HRNet-Human-Pose-Estimation/data/crowdpose/person_detection_result/test_box.json'
   BBOX_THRE: 1.0
   IMAGE_THRE: 0.0
   IN_VIS_THRE: 0.2

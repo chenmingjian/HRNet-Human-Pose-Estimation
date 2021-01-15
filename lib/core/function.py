@@ -38,13 +38,18 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
     for i, item in enumerate(train_loader):
         if config.MODEL.USE_MASK:
             input, target, target_weight, meta, mask = item
+        elif config.MODEL.USE_VECTOR:
+            input, target, target_weight, meta, vector_gt = item        
         else:
             input, target, target_weight, meta = item
         # measure data loading time
         data_time.update(time.time() - end)
 
         # compute output
-        outputs = model(input)
+        if config.MODEL.USE_VECTOR:
+            output, vector_pred = model(input)
+        else:
+            outputs = model(input)
 
         target = target.cuda(non_blocking=True)
         target_weight = target_weight.cuda(non_blocking=True)
@@ -53,6 +58,11 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
             mask = mask.cuda(non_blocking=True)
             output = torch.mul(outputs, mask)
             loss = criterion(output, target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
+        elif config.MODEL.USE_VECTOR:
+            vector_gt = vector_gt.cuda(non_blocking=True)
+            loss_0 = criterion(output, target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
+            loss_1 = criterion(vector_pred, vector_gt, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
+            loss = loss_0 + loss_1/config.MODEL.USE_VECTOR_WEIGHT
         else:
             if isinstance(outputs, list):
                 loss = criterion(outputs[0], target, target_weight, config.MODEL.TWO_BRANCH_WEIGHT)
@@ -131,7 +141,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
         end = time.time()
         for i, item in enumerate(val_loader):
             if config.MODEL.USE_MASK:
-                input, target, target_weight, meta, mask = item
+                input, target, target_weight, meta, mask = item        
+            elif config.MODEL.USE_VECTOR:
+                input, target, target_weight, meta, vector = item        
             else:
                 input, target, target_weight, meta = item
             # compute output
@@ -140,13 +152,19 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 output = outputs[-1]
             else:
                 output = outputs
-
+            
+            if config.MODEL.USE_VECTOR:
+                output = output[0]
+            
             if config.TEST.FLIP_TEST:
                 # this part is ugly, because pytorch has not supported negative index
                 # input_flipped = model(input[:, :, :, ::-1])
                 input_flipped = np.flip(input.cpu().numpy(), 3).copy()
                 input_flipped = torch.from_numpy(input_flipped).cuda()
-                outputs_flipped = model(input_flipped)
+                if config.MODEL.USE_VECTOR:
+                    outputs_flipped, _ = model(input_flipped)
+                else:
+                    outputs_flipped = model(input_flipped)
 
                 if isinstance(outputs_flipped, list):
                     output_flipped = outputs_flipped[-1]

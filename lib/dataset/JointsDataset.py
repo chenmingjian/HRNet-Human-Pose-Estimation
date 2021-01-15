@@ -56,6 +56,7 @@ class JointsDataset(Dataset):
         self.use_half_heatmap = cfg.MODEL.USE_HALF_HEATMAP
         self.use_disk = cfg.MODEL.USE_DISK
         self.use_mul = cfg.MODEL.USE_MUL
+        self.use_vector = cfg.MODEL.USE_VECTOR
         self.use_different_joints_weight = cfg.LOSS.USE_DIFFERENT_JOINTS_WEIGHT
         self.joints_weight = 1
 
@@ -185,6 +186,8 @@ class JointsDataset(Dataset):
                 joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
         if self.use_mask:
             target, target_weight, mask = self.generate_target(joints, joints_vis_full if self.use_branch else joints_vis)
+        elif self.use_vector:
+            target, target_weight, vector = self.generate_target(joints, joints_vis_full if self.use_branch else joints_vis)
         else:
             target, target_weight = self.generate_target(joints, joints_vis_full if self.use_branch else joints_vis)
 
@@ -206,7 +209,8 @@ class JointsDataset(Dataset):
         }
         if self.use_mask: 
             return input, target, target_weight, meta, mask
-
+        if self.use_vector: 
+            return input, target, target_weight, meta, vector
         return input, target, target_weight, meta
 
     def select_data(self, db):
@@ -279,6 +283,8 @@ class JointsDataset(Dataset):
                 heatmap_zeros = np.zeros((self.heatmap_size[1],
                                         self.heatmap_size[0]), 
                                         dtype=np.float32)
+            if self.use_vector:
+                vector = np.zeros((self.num_joints,), dtype=np.float32)
             for joint_id in range(self.num_joints):
                 feat_stride = self.image_size / self.heatmap_size
                 mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
@@ -310,6 +316,8 @@ class JointsDataset(Dataset):
                 if v > 0.5:
                     target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                         g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+                    if self.use_vector and v == 1:
+                        vector[joint_id] = 1
                     if self.use_branch and self.vis_and_all:
                         if v == 1:
                             if self.use_mask:
@@ -346,4 +354,6 @@ class JointsDataset(Dataset):
 
         if self.use_mask:
             return target, target_weight, mask
+        if self.use_vector:
+            return target, target_weight, vector
         return target, target_weight
