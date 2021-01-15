@@ -35,6 +35,8 @@ import models.pose_hrnet_branch_disk_cat_mid
 import models.pose_hrnet_branch_disk_cat_mid_mul
 
 import models.pose_hrnet_vector
+import models.pose_hrnet_vector_cat
+import models.pose_hrnet_vector_cat_mid
 
 import models.pose_hrnet_branch_midFeature_halfHeatmap_easyBackward
 

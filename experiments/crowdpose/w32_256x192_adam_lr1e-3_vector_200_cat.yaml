@@ -7,7 +7,7 @@ DATA_DIR: ''
 GPUS: (0,)
 OUTPUT_DIR: 'output'
 LOG_DIR: 'log'
-WORKERS: 16
+WORKERS: 24
 PRINT_FREQ: 100
 
 DATASET:
@@ -15,7 +15,7 @@ DATASET:
   DATASET: 'crowdpose'
   DATA_FORMAT: jpg
   FLIP: true
-  NUM_JOINTS_HALF_BODY: 7
+  NUM_JOINTS_HALF_BODY: 8
   PROB_HALF_BODY: 0.3
   ROOT: 'data/crowdpose/'
   ROT_FACTOR: 45
@@ -24,11 +24,10 @@ DATASET:
   TRAIN_SET: 'train'
 MODEL:
   INIT_WEIGHTS: true
-  USE_BRANCH: true
-  VIS_AND_ALL: true
-  TWO_BRANCH_WEIGHT: 1
-  NAME: pose_hrnet_branch_midFeature_easyMidSupervise
+  NAME: pose_hrnet_vector_cat
   NUM_JOINTS: 14
+  USE_VECTOR: True
+  USE_VECTOR_WEIGHT: 200
   PRETRAINED: 'models/pytorch/imagenet/hrnet_w32-36af842e.pth'
   TARGET_TYPE: gaussian
   IMAGE_SIZE:
@@ -94,7 +93,7 @@ MODEL:
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
-  BATCH_SIZE_PER_GPU: 56
+  BATCH_SIZE_PER_GPU: 64
   SHUFFLE: true
   BEGIN_EPOCH: 0
   END_EPOCH: 210
@@ -110,8 +109,8 @@ TRAIN:
   MOMENTUM: 0.9
   NESTEROV: false
 TEST:
-  BATCH_SIZE_PER_GPU: 56
-  COCO_BBOX_FILE: '/home/chen/workshop/thesis/HRNet-Human-Pose-Estimation/data/crowdpose/person_detection_result/test_box.json'
+  BATCH_SIZE_PER_GPU: 64
+  COCO_BBOX_FILE: '/mnt/disk3/chen/workshop/thesis/HRNet-Human-Pose-Estimation/data/crowdpose/person_detection_result/test_box.json'
   BBOX_THRE: 1.0
   IMAGE_THRE: 0.0
   IN_VIS_THRE: 0.2
