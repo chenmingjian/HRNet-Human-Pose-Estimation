@@ -90,7 +90,7 @@ def main():
         model.load_state_dict(torch.load(cfg.TEST.MODEL_FILE), strict=False)
     else:
         model_state_file = os.path.join(
-            final_output_dir, 'final_state.pth'
+            final_output_dir, 'model_best.pth'
         )
         logger.info('=> loading model from {}'.format(model_state_file))
         model.load_state_dict(torch.load(model_state_file))

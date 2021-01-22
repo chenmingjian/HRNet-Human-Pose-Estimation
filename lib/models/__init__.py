@@ -12,6 +12,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+
 import models.pose_resnet
 import models.pose_hrnet
 import models.pose_hrnet_branch
@@ -39,3 +40,4 @@ import models.pose_hrnet_vector
 import models.pose_hrnet_branch_midFeature_halfHeatmap_easyBackward
 
 import models.pose_hrnet_branch_finalFeature_cat
+import models.pose_hrnet_vector_focusFc

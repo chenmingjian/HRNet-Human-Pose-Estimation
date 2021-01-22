@@ -154,7 +154,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 output = outputs
             
             if config.MODEL.USE_VECTOR:
-                output = output[0]
+                output, vis_vector = output[0], output[1]
             
             if config.TEST.FLIP_TEST:
                 # this part is ugly, because pytorch has not supported negative index
@@ -247,7 +247,17 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             else:
                 preds, maxvals = get_final_preds(
                     config, output_np, c, s, output_vis_np)
-
+            if config.MODEL.USE_VECTOR:
+                vis_vector = vis_vector.cpu().numpy().reshape((num_images, config.MODEL.NUM_JOINTS, 1))
+                for index_0 in range(vis_vector.shape[0]):
+                    for index_1 in range(vis_vector.shape[1]):
+                        for index_2 in range(vis_vector.shape[2]):
+                            old_v = vis_vector[index_0, index_1, index_2]
+                            if old_v > 0.5:
+                                vis_vector[index_0, index_1, index_2] = 2
+                            else:
+                                vis_vector[index_0, index_1, index_2] = 1
+                isViss[idx:idx + num_images, :] = vis_vector
             all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2]
             all_preds[idx:idx + num_images, :, 2:3] = maxvals
             if output_vis_np is not None:

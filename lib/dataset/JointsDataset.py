@@ -57,6 +57,7 @@ class JointsDataset(Dataset):
         self.use_disk = cfg.MODEL.USE_DISK
         self.use_mul = cfg.MODEL.USE_MUL
         self.use_vector = cfg.MODEL.USE_VECTOR
+        self.use_vector_threeValue = cfg.MODEL.USE_VECTOR_THREE_VALUE
         self.use_different_joints_weight = cfg.LOSS.USE_DIFFERENT_JOINTS_WEIGHT
         self.joints_weight = 1
 
@@ -316,8 +317,12 @@ class JointsDataset(Dataset):
                 if v > 0.5:
                     target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                         g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
-                    if self.use_vector and v == 1:
-                        vector[joint_id] = 1
+                    if self.use_vector:
+                        if self.use_vector_threeValue:
+                            vector[joint_id] = v
+                        elif v == 2:
+                            vector[joint_id] = 1
+                    
                     if self.use_branch and self.vis_and_all:
                         if v == 1:
                             if self.use_mask:

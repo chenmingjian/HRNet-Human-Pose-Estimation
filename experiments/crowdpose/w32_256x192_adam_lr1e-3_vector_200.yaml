@@ -4,7 +4,7 @@ CUDNN:
   DETERMINISTIC: false
   ENABLED: true
 DATA_DIR: ''
-GPUS: (0,1)
+GPUS: (0,)
 OUTPUT_DIR: 'output'
 LOG_DIR: 'log'
 WORKERS: 24
@@ -28,6 +28,7 @@ MODEL:
   NUM_JOINTS: 14
   USE_VECTOR: True
   USE_VECTOR_WEIGHT: 200
+  BRANCH_MERGE_STRATEGY: "all"
   PRETRAINED: 'models/pytorch/imagenet/hrnet_w32-36af842e.pth'
   TARGET_TYPE: gaussian
   IMAGE_SIZE:
