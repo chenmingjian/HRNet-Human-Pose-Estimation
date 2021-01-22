@@ -468,7 +468,7 @@ class PoseHighResolutionNet(nn.Module):
         y_list = self.stage4(x_list)
 
         x_0 = self.final_layer_0(y_list[0])
-        merge_feature_heatmap = torch.cat([x_0.detach(), early_feature], 1)
+        merge_feature_heatmap = torch.cat([x_0.detach(), s], 1)
         x_1 = self.final_layer_1(merge_feature_heatmap)
         x = torch.cat([x_0, x_1], 1)
         return x

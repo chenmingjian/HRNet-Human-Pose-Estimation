@@ -453,11 +453,12 @@ class PoseHighResolutionNet(nn.Module):
             else:
                 x_list.append(y_list[i])
 
-        # for i in range(len(self.stage3)):
-        #     y_list = self.stage3[i](y_list)
-        #     if i == 2:
-        #         early_feature = y_list[0]
-        y_list = self.stage3(x_list)
+        y_list = x_list
+        for i in range(len(self.stage3)):
+            y_list = self.stage3[i](y_list)
+            if i == 2:
+                early_feature = y_list[0]
+        # y_list = self.stage3(x_list)
 
         x_list = []
         for i in range(self.stage4_cfg['NUM_BRANCHES']):
@@ -468,7 +469,7 @@ class PoseHighResolutionNet(nn.Module):
         y_list = self.stage4(x_list)
 
         x_0 = self.final_layer_0(y_list[0])
-        merge_feature_heatmap = torch.cat([x_0, y_list[0]], 1)
+        merge_feature_heatmap = torch.cat([x_0, early_feature], 1)
         x_1 = self.final_layer_1(merge_feature_heatmap)
         x_1 = self.global_average_pooling(x_1)
         # x = torch.cat([x_0, x_1], 1)
