@@ -13,7 +13,7 @@ from collections import OrderedDict, defaultdict
 import json_tricks as json
 import numpy as np
 import sys
-sys.path.insert(0, "/mnt/disk3/chen/workshop/thesis/CrowdPose/crowdpose-api/PythonAPI")
+sys.path.insert(0, "~/workshop/thesis/CrowdPose/crowdpose-api/PythonAPI")
 from crowdposetools.coco import COCO
 from crowdposetools.cocoeval import COCOeval
 from nms.nms import oks_nms, soft_oks_nms
