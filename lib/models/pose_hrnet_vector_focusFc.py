@@ -415,7 +415,7 @@ class PoseHighResolutionNet(nn.Module):
         modules = []
         for i in range(num_modules):
             # multi_scale_output is only used last module
-            if not multi_scale_output and i == num_modules - 1:
+            if not multi_scale_output0 and i == num_modules - 1:
                 reset_multi_scale_output = False
             else:
                 reset_multi_scale_output = True
