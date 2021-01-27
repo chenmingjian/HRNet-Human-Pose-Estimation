@@ -26,6 +26,7 @@ MODEL:
   INIT_WEIGHTS: true
   USE_BRANCH: true
   VIS_AND_ALL: true
+  BRANCH_MERGE_STRATEGY: "all"
   NAME: pose_hrnet_branch_midFeature
   TWO_BRANCH_WEIGHT: 10
   NUM_JOINTS: 14

@@ -45,7 +45,7 @@ def get_max_preds(batch_heatmaps):
     preds *= pred_mask
     return preds, maxvals
 
-def get_vis(config, batch_heatmaps, coords):
+def get_vis(config, batch_heatmaps, coords, threshold=0.2):
     batch_size = batch_heatmaps.shape[0]
     num_joints = batch_heatmaps.shape[1]
     width = batch_heatmaps.shape[3]
@@ -62,7 +62,7 @@ def get_vis(config, batch_heatmaps, coords):
         for j in range(batch_size):
             heatmaps_tmp = heatmaps_reshaped[j, index_joints]
             vis[j, i] = heatmaps_tmp[idxs[j, i, 1].astype(int), idxs[j, i, 0].astype(int)]
-            vis[j, i] = 2 if vis[j, i] >= 0.5 else 1
+            vis[j, i] = 2 if vis[j, i] >= threshold else 1
     return vis
         
 

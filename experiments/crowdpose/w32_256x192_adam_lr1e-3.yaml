@@ -115,8 +115,8 @@ TEST:
   MODEL_FILE: ''
   NMS_THRE: 1.0
   OKS_THRE: 0.9
-  USE_GT_BBOX: false
-  FLIP_TEST: false
+  USE_GT_BBOX: true
+  FLIP_TEST: true
   POST_PROCESS: true
   SHIFT_HEATMAP: true
 DEBUG:
