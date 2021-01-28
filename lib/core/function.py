@@ -248,12 +248,13 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 preds, maxvals = get_final_preds(
                     config, output_np, c, s, output_vis_np)
             if config.MODEL.USE_VECTOR:
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", vis_vector.shape)
                 vis_vector = vis_vector.cpu().numpy().reshape((num_images, config.MODEL.NUM_JOINTS, 1))
                 for index_0 in range(vis_vector.shape[0]):
                     for index_1 in range(vis_vector.shape[1]):
                         for index_2 in range(vis_vector.shape[2]):
                             old_v = vis_vector[index_0, index_1, index_2]
-                            if old_v > 0.5:
+                            if old_v > 0.2:
                                 vis_vector[index_0, index_1, index_2] = 2
                             else:
                                 vis_vector[index_0, index_1, index_2] = 1
